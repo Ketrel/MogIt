@@ -494,6 +494,8 @@ function mog:TRANSMOG_SEARCH_UPDATED()
 		if name then
 			name = SLOTS[i]
 			local db = db
+            local category = i
+            local slotName = TransmogUtil.GetSlotName(category)
 			if isWeapon then
 				mog.relevantCategories[name] = true
 			end
@@ -503,30 +505,28 @@ function mog:TRANSMOG_SEARCH_UPDATED()
 				db = ArmorDB
 			end
 			db[name] = db[name] or {}
-			-- required to include all artifacts
-			local exclusionCategory
-			if canMainHand then
-				exclusionCategory = 2
-			elseif canOffHand then
-				exclusionCategory = 1
-			end
-			for i, appearance in ipairs(C_TransmogCollection.GetCategoryAppearances(i, exclusionCategory)) do
-				if not appearance.isHideVisual then
-					local v = db[name][appearance.visualID] or {}
-					db[name][appearance.visualID] = v
-					if v[1] and v[1].sourceID then
-						db[name][appearance.visualID] = {}
-					end
-					for i, source in ipairs(GetAppearanceSources(appearance.visualID)) do
-						local s = v[source.sourceID] or {}
-						v[source.sourceID] = s
-						s.sourceType = source.sourceType
-						s.drops = GetAppearanceSourceDrops(source.sourceID)
-						s.classes = bor(s.classes or 0, L.classBits[playerClass])
-						s.faction = bor(s.faction or 0, FACTIONS[faction])
-					end
-				end
-			end
+
+            if (slotName) then
+                local location = TransmogUtil.GetTransmogLocation(slotName, Enum.TransmogType.Appearance, Enum.TransmogModification.Main)
+                local appearances = C_TransmogCollection.GetCategoryAppearances(category, location)
+                for i, appearance in ipairs(appearances) do
+                    if not appearance.isHideVisual then
+                        local v = db[name][appearance.visualID] or {}
+                        db[name][appearance.visualID] = v
+                        if v[1] and v[1].sourceID then
+                            db[name][appearance.visualID] = {}
+                        end
+                        for i, source in ipairs(C_TransmogCollection.GetAppearanceSources(appearance.visualID, category, location)) do
+                            local s = v[source.sourceID] or {}
+                            v[source.sourceID] = s
+                            s.sourceType = source.sourceType
+                            s.drops = GetAppearanceSourceDrops(source.sourceID)
+                            s.classes = bor(s.classes or 0, L.classBits[playerClass])
+                            s.faction = bor(s.faction or 0, FACTIONS[faction])
+                        end
+                    end
+                end
+            end
 		end
 	end
 	
